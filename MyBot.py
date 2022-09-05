@@ -216,9 +216,9 @@ def game(genome, config):
 
                     # More for deeper into pipe, 75 pixels deep = roughly the same as 500 for next pipe seen, no double dipping this with pipe seen though
                     if birdX > floorX and pipeSeenCounter == pipeScoreCounter:
-                        bonus = ((birdX-floorX)**2)/10
-                        if bonus > 500:
-                            bonus = 500
+                        bonus = ((birdX-floorX)**2)/100
+                        if bonus > 50:
+                            bonus = 50
                         bonusPoints += bonus
 
                     # Less points for further away, from optimal Y, power of two makes non linear, /1000 makes it so it doesn't eliminate last pipe seen score all the way
