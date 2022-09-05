@@ -30,6 +30,8 @@ BEST_GENOME = 0
 sleepTime = .005
 normalizePassTo = .1
 GAMESPLAYED = 0
+GAMESPLAYED = 0
+pipeBottomImage = Image.open('assets/PipeBottom.png')
 
 
 def pressSpace():
@@ -73,8 +75,7 @@ def game(genome, config):
     # birdLastSeen = time.time()
     # birdFlewAway = False
     lastPressed = time.time()
-    end = time.time()    
-    pipeBottomImage = Image.open('assets/PipeBottom.png')
+    end = time.time()
     pic = pyautogui.screenshot(region=(reg1,reg2,reg3,reg4))
     pipeScored = True
     totalJumpedPerRound = 0
