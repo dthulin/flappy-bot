@@ -209,21 +209,33 @@ def game(genome, config):
                     distanceFromOptimalY = math.dist([midYWithOffset],[birdY])
 
                     bonusPoints = 0
+                    penalties = 0
                     bonusPoints += pipeSeenCounter * 50
                     bonusPoints += passCounter * 10
-                    # More for deeper into pipe, 75 pixels deep = roughly the same as 500 for next pipe seen
-                    if birdX > floorX:
-                        bonusPoints += ((birdX-floorX)**2)/10
-                    
-                    penalties = 0
+
+                    # More for deeper into pipe, 75 pixels deep = roughly the same as 500 for next pipe seen, no double dipping this with pipe seen though
+                    if birdX > floorX and pipeSeenCounter == pipeScoreCounter:
+                        bonus = ((birdX-floorX)**2)/10
+                        if bonus > 500:
+                            bonus = 500
+                        bonusPoints += bonus
+
                     # Less points for further away, from optimal Y, power of two makes non linear, /1000 makes it so it doesn't eliminate last pipe seen score all the way
-                    penalties += (distanceFromOptimalY**2)/1000
+                    offTargetPenalty = (distanceFromOptimalY**2)/1000
+                    if offTargetPenalty > 90:
+                        offTargetPenalty = 90
+                    penalties += offTargetPenalty
+
+                    # Flew away penalty
                     if not birdFound:
                         penalties += 50
+
+                    # Didn't even try penalty
                     if totalJumpedPerRound < 1:
                         penalties += 50
-                    # If bird flew in opposite direction of pipe, that's a big no-no. 50 points from Slytherine!
-                    if math.dist([birdY],[floorY]) > math.dist([birdY],[prevFloorY]):
+                    
+                    # If bird flew in opposite direction of pipe, that's a big no-no. 50 points from Slytherine! (But only if floors are far enough apart)
+                    if math.dist([prevFloorY],[floorY]) > 150 and math.dist([birdY],[floorY]) > math.dist([birdY],[prevFloorY]):
                         penalties += 50
                     # The above was in lue of higher score for further distance from this pipe to last which would be implemented as pipeScoreCounter multiplier in the SCORE adjustment
                     
@@ -240,6 +252,15 @@ def game(genome, config):
                         afterSpaceCount += 1
                         time.sleep(sleepTime)
     return(fitness)
+
+
+config = neat.Config(neat.DefaultGenome, neat.DefaultReproduction,
+                         neat.DefaultSpeciesSet, neat.DefaultStagnation,
+                         'config')
+
+outputDir = os.getcwd() + '/bestGenomes'
+Path(outputDir).mkdir(parents =True, exist_ok=True)
+os.chdir(outputDir)
 
 def eval_genomes(genomes, config):
     global SCORE
@@ -260,6 +281,9 @@ def eval_genomes(genomes, config):
             if genome.fitness >= MAX_FITNESS:
                 MAX_FITNESS = genome.fitness
                 BEST_GENOME = genome
+                serialNo = len(os.listdir(outputDir))+1
+                outputFile = open(str(serialNo)+'_'+str(int(MAX_FITNESS))+'.p','wb' )
+                pickle.dump(genome, outputFile)
             if genome.fitness >= MAX_FITNESS_THIS_GEN:
                 MAX_FITNESS_THIS_GEN = genome.fitness
         SCORE = 0
@@ -267,10 +291,6 @@ def eval_genomes(genomes, config):
     print('**********')
     print("GEN COMPLETE: {} | Best Fitness: {} | Improvement Over Last: {}".format(GENERATION, MAX_FITNESS_THIS_GEN, MAX_FITNESS_THIS_GEN - MAX_FITNESS_LAST_GEN))
     print('**********')
-
-config = neat.Config(neat.DefaultGenome, neat.DefaultReproduction,
-                         neat.DefaultSpeciesSet, neat.DefaultStagnation,
-                         'config')
 
 pop = neat.Population(config)
 stats = neat.StatisticsReporter()
@@ -280,9 +300,6 @@ winner = pop.run(eval_genomes, 1000)
 
 print(winner)
 
-outputDir = os.getcwd() + '/bestGenomes'
-Path(outputDir).mkdir(parents =True, exist_ok=True)
-os.chdir(outputDir)
 serialNo = len(os.listdir(outputDir))+1
 outputFile = open(str(serialNo)+'_'+str(int(MAX_FITNESS))+'.p','wb' )
 
