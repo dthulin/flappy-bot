@@ -24,6 +24,8 @@ HIGHESTSCORTHISROUND = 0
 HIGHESTSCORE = 0
 GENERATION = 0
 MAX_FITNESS = float('-inf')
+GEN_WITH_MAX_F = 0
+GENOME_WITH_MAX_F = 0
 MAX_FITNESS_THIS_GEN = float('-inf')
 MAX_FITNESS_LAST_GEN = float('-inf')
 BEST_GENOME = 0
@@ -266,7 +268,7 @@ os.chdir(outputDir)
 def eval_genomes(genomes, config):
     global SCORE
     global HIGHESTSCORTHISROUND
-    global GENERATION, MAX_FITNESS, BEST_GENOME, MAX_FITNESS_THIS_GEN, MAX_FITNESS_LAST_GEN
+    global GENERATION, MAX_FITNESS, GEN_WITH_MAX_F, GENOME_WITH_MAX_F, BEST_GENOME, MAX_FITNESS_THIS_GEN, MAX_FITNESS_LAST_GEN
 
     MAX_FITNESS_LAST_GEN = MAX_FITNESS_THIS_GEN
     MAX_FITNESS_THIS_GEN = float('-inf')
@@ -277,14 +279,17 @@ def eval_genomes(genomes, config):
         genome.fitness = game(genome, config)
         if genome.fitness is None:
             genome.fitness = float('-inf') #fixes errors on early termination
-        print("Gen: {} | Genome#: {} | Fitness: {} | Max Gen Fitness: {} | Max Overall Fitness: {}".format(GENERATION,i,genome.fitness,MAX_FITNESS_THIS_GEN,MAX_FITNESS))
+        print("Gen: {} | Genome#: {} | Fitness: {} | Max Gen Fitness: {} | Max Overall Fitness: {} | Max Gen/Genome#: {}:{}".format(GENERATION,i,genome.fitness,MAX_FITNESS_THIS_GEN,MAX_FITNESS,GEN_WITH_MAX_F,GENOME_WITH_MAX_F))
         if (genome.fitness):
             if genome.fitness >= MAX_FITNESS:
+                GEN_WITH_MAX_F = GENERATION
+                GENOME_WITH_MAX_F = i
                 MAX_FITNESS = genome.fitness
                 BEST_GENOME = genome
-                serialNo = len(os.listdir(outputDir))+1
-                outputFile = open(str(serialNo)+'_'+str(int(MAX_FITNESS))+'.p','wb' )
-                pickle.dump(genome, outputFile)
+                if GENERATION > 5:
+                    serialNo = len(os.listdir(outputDir))+1
+                    outputFile = open(str(serialNo)+'_'+str(int(MAX_FITNESS))+'.p','wb' )
+                    pickle.dump(genome, outputFile)
             if genome.fitness >= MAX_FITNESS_THIS_GEN:
                 MAX_FITNESS_THIS_GEN = genome.fitness
         SCORE = 0
