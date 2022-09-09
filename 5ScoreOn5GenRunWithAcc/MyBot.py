@@ -14,7 +14,7 @@ import math
 
 pyautogui.PAUSE = .001
 
-pyautogui.FAILSAFE = False
+# pyautogui.FAILSAFE = False
 # ^^^^ Careful with this one ^^^^
 # FAILSAFE kills the program if you jam your mouse into the corner of the screen or something like that.
 # This turns off that feature, making it possible if you don't have something like the press Q to terminate
@@ -58,7 +58,7 @@ def game(genome, config):
 
     reg1=915
     reg2=400
-    reg3=250
+    reg3=245
     reg4=450
     running = True
     pipeSeenCounter = 0
@@ -216,7 +216,7 @@ def game(genome, config):
                             prevPipeFloorY = floorY
                             if not pipeScored:
                                 pipeScoreCounter += 1
-                                SCORE += 150
+                                SCORE += 100 + (math.dist([floorY],[prevFloorY])/5)
                             floorX = pipeLocate[0]
                             floorY = pipeLocate[1]
                             autoPilot = False
@@ -231,7 +231,7 @@ def game(genome, config):
                 if(not pipeScored and floorX < birdX and birdFound and birdY < floorY and birdY > floorY-140):
                     pipeScored = True
                     pipeScoreCounter += 1
-                    SCORE += 150
+                    SCORE += 100 + (math.dist([floorY],[prevPipeFloorY])/5)
                 if autoPilot:
                     if floorY < birdY+80 and afterSpaceCount > 3:
                         afterSpaceCount = 0
@@ -241,20 +241,20 @@ def game(genome, config):
                         afterSpaceCount += 1
                         time.sleep(sleepTime)
                 else:
-                    # Mid is technically 70 since it's 140 high, but in the interest of illiciting a higher arc, might fudge higher because y is eye
-                    midYWithOffset = floorY-90
+                    # Mid is technically 70 since it's 140 high, but in the interest of illiciting a higher arc, hoping 100 will be better
+                    midYWithOffset = floorY-80
                     distanceFromOptimalY = math.dist([midYWithOffset],[birdY])
 
                     bonusPoints = 0
                     penalties = 0
-                    bonusPoints += pipeSeenCounter * 75
+                    bonusPoints += pipeSeenCounter * 50
                     bonusPoints += passCounter * 10
 
                     # More for deeper into pipe, 75 pixels deep = roughly the same as 500 for next pipe seen, no double dipping this with pipe seen though
                     if birdX > floorX and pipeSeenCounter == pipeScoreCounter:
                         bonus = (math.dist([birdX],[floorX])**2)/100
-                        if bonus > 50:
-                            bonus = 50
+                        if bonus > 45:
+                            bonus = 45
                         bonusPoints += bonus
 
                     # Less points for further away, from optimal Y, power of two makes non linear, /1000 makes it so it doesn't eliminate last pipe seen score all the way
@@ -286,7 +286,7 @@ def game(genome, config):
                     
                     fitness = SCORE - penalties + bonusPoints
                     # inp = (birdX,birdY,floorY,floorX,afterSpaceCount,time.time()-lastPressed)
-                    inp = ((birdY+birdNextVel)-floorY, reg4-(birdY+birdNextVel), birdNextVel, floorX,floorX+75, afterSpaceCount)
+                    inp = (birdY-floorY+birdNextVel, floorX, afterSpaceCount)
                     output = net.activate(inp)
                     if (output[0]>0.5):
                         afterSpaceCount = 0
@@ -346,7 +346,7 @@ pop = neat.Population(config)
 stats = neat.StatisticsReporter()
 pop.add_reporter(stats)
 
-winner = pop.run(eval_genomes, 1000)
+winner = pop.run(eval_genomes, 5)
 
 print(winner)
 

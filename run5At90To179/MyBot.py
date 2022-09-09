@@ -58,7 +58,7 @@ def game(genome, config):
 
     reg1=915
     reg2=400
-    reg3=250
+    reg3=245
     reg4=450
     running = True
     pipeSeenCounter = 0
@@ -73,10 +73,6 @@ def game(genome, config):
     birdY = int(0)
     prevBirdY = int(0)
     birdX = int(32)
-    birdVel = 0
-    birdPrevVel = 0
-    birdNextVel = 0
-    birdAcc = 0
     tryCounter = 0
     afterSpaceCount = 0
     time.sleep(2)
@@ -162,10 +158,6 @@ def game(genome, config):
             birdY = int(0)
             prevBirdY = int(0)
             birdX = int(32)
-            birdVel = 0
-            birdPrevVel = 0
-            birdNextVel = 0
-            birdAcc = 0
             pipeScored = True
             afterSpaceCount = 0
             timesJumpedWhenBirdNotFound = 0
@@ -174,7 +166,6 @@ def game(genome, config):
             birdFound = False
             prevBirdY = birdY
             birdY = int(0)
-            birdPrevVel = birdVel
             for y in range(height):
                 r,g,b=pic.getpixel((birdX,y))
                 if r<180:
@@ -185,21 +176,6 @@ def game(genome, config):
                     birdFound = True
                     # birdLastSeen = time.time()
                     break
-            birdVel = birdY - prevBirdY
-            # print('Bird Vel:',birdVel,'Projected:',birdNextVel,'Off By:',birdVel-birdNextVel,'ACC:',birdAcc,'Since Last Mouse Press:',afterSpaceCount)
-            if lastPressed == 0:
-                birdVel = 0
-                birdAcc = -30
-            elif lastPressed == 1:
-                birdAcc = -40
-            elif lastPressed == 2:
-                birdAcc = -40
-            elif lastPressed == 3:
-                birdAcc = -50
-            else:
-                birdAcc = 10
-            birdNextVel = birdVel+birdAcc
-            # pyautogui.moveTo(birdX+reg1, birdY+birdNextVel+reg2,_pause=False)
             if not gameOver:
                 # print('Looking for pipe...')
                 pipeLocate = pyautogui.locate(pipeBottomImage,pic)
@@ -216,7 +192,7 @@ def game(genome, config):
                             prevPipeFloorY = floorY
                             if not pipeScored:
                                 pipeScoreCounter += 1
-                                SCORE += 150
+                                SCORE += 100 + (math.dist([floorY],[prevFloorY])/5)
                             floorX = pipeLocate[0]
                             floorY = pipeLocate[1]
                             autoPilot = False
@@ -231,7 +207,7 @@ def game(genome, config):
                 if(not pipeScored and floorX < birdX and birdFound and birdY < floorY and birdY > floorY-140):
                     pipeScored = True
                     pipeScoreCounter += 1
-                    SCORE += 150
+                    SCORE += 100 + (math.dist([floorY],[prevPipeFloorY])/5)
                 if autoPilot:
                     if floorY < birdY+80 and afterSpaceCount > 3:
                         afterSpaceCount = 0
@@ -241,20 +217,21 @@ def game(genome, config):
                         afterSpaceCount += 1
                         time.sleep(sleepTime)
                 else:
-                    # Mid is technically 70 since it's 140 high, but in the interest of illiciting a higher arc, might fudge higher because y is eye
-                    midYWithOffset = floorY-90
+                    # Mid is technically 70 since it's 140 high, but in the interest of illiciting a higher arc, hoping 100 will be better
+                    midYWithOffset = floorY-80
+                    # pyautogui.moveTo(floorX+reg1, midYWithOffset+reg2,_pause=False)
                     distanceFromOptimalY = math.dist([midYWithOffset],[birdY])
 
                     bonusPoints = 0
                     penalties = 0
-                    bonusPoints += pipeSeenCounter * 75
+                    bonusPoints += pipeSeenCounter * 50
                     bonusPoints += passCounter * 10
 
                     # More for deeper into pipe, 75 pixels deep = roughly the same as 500 for next pipe seen, no double dipping this with pipe seen though
                     if birdX > floorX and pipeSeenCounter == pipeScoreCounter:
                         bonus = (math.dist([birdX],[floorX])**2)/100
-                        if bonus > 50:
-                            bonus = 50
+                        if bonus > 45:
+                            bonus = 45
                         bonusPoints += bonus
 
                     # Less points for further away, from optimal Y, power of two makes non linear, /1000 makes it so it doesn't eliminate last pipe seen score all the way
@@ -276,17 +253,17 @@ def game(genome, config):
                         penalties += 50
                     
                     # If bird flew in opposite direction of pipe, that's a big no-no. 50 points from Slytherine! (But only if floors are far enough apart)
-                    # floorDif = math.dist([prevPipeFloorY],[floorY])
-                    # if floorDif > 100 and math.dist([birdY],[floorY-80]) > math.dist([birdY],[prevPipeFloorY-80]):
-                    #     penalty = (floorDif**2)/1000
-                    #     if penalty > 50:
-                    #         penalty = 50
-                    #     penalties += penalty
+                    floorDif = math.dist([prevPipeFloorY],[floorY])
+                    if floorDif > 100 and math.dist([birdY],[floorY-80]) > math.dist([birdY],[prevPipeFloorY-80]):
+                        penalty = (floorDif**2)/1000
+                        if penalty > 50:
+                            penalty = 50
+                        penalties += penalty
                     # The above was in lue of higher score for further distance from this pipe to last which would be implemented as pipeScoreCounter multiplier in the SCORE adjustment
                     
                     fitness = SCORE - penalties + bonusPoints
                     # inp = (birdX,birdY,floorY,floorX,afterSpaceCount,time.time()-lastPressed)
-                    inp = ((birdY+birdNextVel)-floorY, reg4-(birdY+birdNextVel), birdNextVel, floorX,floorX+75, afterSpaceCount)
+                    inp = (birdY-floorY, floorX, afterSpaceCount)
                     output = net.activate(inp)
                     if (output[0]>0.5):
                         afterSpaceCount = 0
